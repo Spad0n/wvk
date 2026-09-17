@@ -42,7 +42,7 @@ target("game")
 
 One output per stage: `<targetdir>/<outputdir>/<basename>.<vert|frag|comp|mesh|task>.spv`
 The wvk sourc root is added to the include path automatically when the target depends on wvk,
-so shaders write `#include "shaders/wvk.hlsl"
+so shaders write `#include "shaders/wvk.hlsl"`.
 
 Target values (all optional):
 
