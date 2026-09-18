@@ -751,7 +751,7 @@ struct RequiredFeatures
 [[nodiscard]] bool has_required_features(const RequiredFeatures& f) noexcept
 {
     return f.core.features.shaderStorageImageWriteWithoutFormat &&
-           f.core.features.shaderStorageImageReadWithoutFormat &&
+        //f.core.features.shaderStorageImageReadWithoutFormat &&
            f.v11.shaderDrawParameters &&
            f.v12.timelineSemaphore &&
            f.v12.bufferDeviceAddress &&
@@ -782,7 +782,7 @@ void enable_required_features(RequiredFeatures& f) noexcept
     // filtered copy, so only the bits set here are actually requested.
     RequiredFeatures enabled;
     enabled.core.features.shaderStorageImageWriteWithoutFormat = VK_TRUE;
-    enabled.core.features.shaderStorageImageReadWithoutFormat = VK_TRUE;
+    enabled.core.features.shaderStorageImageReadWithoutFormat = f.core.features.shaderStorageImageReadWithoutFormat;
     enabled.core.features.samplerAnisotropy = f.core.features.samplerAnisotropy;
     enabled.core.features.multiDrawIndirect = f.core.features.multiDrawIndirect;
     enabled.core.features.drawIndirectFirstInstance = f.core.features.drawIndirectFirstInstance;
@@ -1834,16 +1834,21 @@ Error get_device_error(const Device* device) noexcept
 
 bool supports_format(const Device* device, Format format, TextureUsage usage) noexcept
 {
-    if (!alive(device) || format == Format::undefined) return false;
-    VkFormatProperties properties{};
-    vkGetPhysicalDeviceFormatProperties(device->physical_device, to_vk(format), &properties);
-    const VkFormatFeatureFlags features = properties.optimalTilingFeatures;
-    if (has_flag(usage, TextureUsage::sampled) && (features & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) == 0) return false;
-    if (has_flag(usage, TextureUsage::storage) && (features & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0) return false;
-    if (has_flag(usage, TextureUsage::color_attachment) && (features & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) == 0)
+    VkFormatProperties3 properties3{.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3};
+    VkFormatProperties2 properties{.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2, .pNext = &properties3};
+    vkGetPhysicalDeviceFormatProperties2(device->physical_device, to_vk(format), &properties);
+    const VkFormatFeatureFlags2 features = properties3.optimalTilingFeatures;
+    if (has_flag(usage, TextureUsage::sampled) && (features & VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT) == 0) return false;
+
+    constexpr VkFormatFeatureFlags2 storage_bits = VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT |
+                                                   VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT |
+                                                   VK_FORMAT_FEATURE_2_STORAGE_WRITE_WITHOUT_FORMAT_BIT;
+
+    if (has_flag(usage, TextureUsage::storage) && (features & storage_bits) != storage_bits) return false;
+    if (has_flag(usage, TextureUsage::color_attachment) && (features & VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT) == 0)
         return false;
     if (has_flag(usage, TextureUsage::depth_stencil_attachment) &&
-        (features & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0)
+        (features & VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT) == 0)
         return false;
     return true;
 }
