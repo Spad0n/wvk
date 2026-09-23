@@ -50,5 +50,5 @@ target("wvk")
 target_end()
 
 if has_config("wvk-examples") then
-    includes("examples/triangle")
+    includes("examples/*")
 end

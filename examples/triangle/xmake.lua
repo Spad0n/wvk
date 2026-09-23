@@ -6,7 +6,7 @@ target("triangle")
     add_deps("wvk")
     add_packages("libsdl3")
 
-    add_files("triangle.cpp")
+    add_files("main.cpp")
     if is_plat("linux") then
         add_defines("GAME_LINUX=1")
     end

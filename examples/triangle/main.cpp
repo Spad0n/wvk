@@ -1,5 +1,3 @@
-/* -*- compile-command: "g++ -std=c++20 -DGAME_LINUX=1 -I./include $(pkg-config --cflags sdl3) triangle_new.cpp ./src/wvk.cpp $(pkg-config --libs sdl3) -lvulkan -o triangle_new" -*- */
-
 #define SDL_MAIN_HANDLED
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
