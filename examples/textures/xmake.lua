@@ -21,5 +21,8 @@ target("textures")
    })
 
    after_build(function (target)
-      os.cp(path.join(os.scriptdir(), "texture.png"), target:targetdir())
+      local texture_path = path.join(os.scriptdir(), "texture.png")
+      if os.isfile(texture_path) then
+	 os.cp(texture_path, target:targetdir())
+      end
    end)
