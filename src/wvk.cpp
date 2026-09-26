@@ -736,15 +736,20 @@ struct RequiredFeatures
     VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT mutable_type{
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT};
     VkPhysicalDeviceMeshShaderFeaturesEXT mesh{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT};
+    VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR unified{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFIED_IMAGE_LAYOUTS_FEATURES_KHR};
 
-    void chain(bool include_mesh) noexcept
+    void chain(bool include_mesh, bool include_unified) noexcept
     {
         core.pNext = &v11;
         v11.pNext = &v12;
         v12.pNext = &v13;
         v13.pNext = &mutable_type;
-        mutable_type.pNext = include_mesh ? static_cast<void*>(&mesh) : nullptr;
+        void** tail = &mutable_type.pNext;
         mesh.pNext = nullptr;
+        unified.pNext = nullptr;
+        if (include_mesh)    { *tail = &mesh; tail = &mesh.pNext; }
+        if (include_unified) { *tail = &unified; tail = &unified.pNext; }
+        *tail = nullptr;
     }
 };
 
@@ -823,6 +828,8 @@ void enable_required_features(RequiredFeatures& f) noexcept
     enabled.mutable_type.mutableDescriptorType = VK_TRUE;
     enabled.mesh.meshShader = f.mesh.meshShader;
     enabled.mesh.taskShader = f.mesh.taskShader;
+
+    enabled.unified.unifiedImageLayouts = f.unified.unifiedImageLayouts;
 
     f = enabled;
 }
@@ -1493,6 +1500,7 @@ DeviceInit create_device(const DeviceDesc& desc) noexcept
     VkPhysicalDevice selected = VK_NULL_HANDLE;
     uint32 selected_family = 0;
     bool selected_mesh = false;
+    bool selected_unified = false;
     RequiredFeatures selected_features;
     VkPhysicalDeviceProperties selected_properties{};
     VkPhysicalDeviceDescriptorIndexingProperties selected_indexing{
@@ -1519,9 +1527,10 @@ DeviceInit create_device(const DeviceDesc& desc) noexcept
             continue;
 
         const bool mesh = has_extension(device_extensions, device_extension_count, VK_EXT_MESH_SHADER_EXTENSION_NAME);
+        const bool unified = has_extension(device_extensions, device_extension_count, VK_KHR_UNIFIED_IMAGE_LAYOUTS_EXTENSION_NAME);
 
         RequiredFeatures features;
-        features.chain(mesh);
+        features.chain(mesh, unified);
         vkGetPhysicalDeviceFeatures2(physical, &features.core);
         if (!has_required_features(features)) continue;
 
@@ -1555,6 +1564,7 @@ DeviceInit create_device(const DeviceDesc& desc) noexcept
         selected = physical;
         selected_family = family;
         selected_mesh = mesh;
+        selected_unified = unified;
         selected_features = features;
         selected_properties = properties.properties;
         selected_indexing = indexing;
@@ -1589,6 +1599,7 @@ DeviceInit create_device(const DeviceDesc& desc) noexcept
                         selected_properties.limits.minMemoryMapAlignment);
     device->caps.mesh_shaders = selected_mesh && selected_features.mesh.meshShader == VK_TRUE;
     device->caps.task_shaders = device->caps.mesh_shaders && selected_features.mesh.taskShader == VK_TRUE;
+    device->caps.unified_image_layouts = selected_unified && selected_features.unified.unifiedImageLayouts == VK_TRUE;
     device->caps.multi_draw_indirect = selected_features.core.features.multiDrawIndirect == VK_TRUE;
     device->caps.draw_indirect_count = selected_features.v12.drawIndirectCount == VK_TRUE;
     device->caps.depth_clamp = selected_features.core.features.depthClamp == VK_TRUE;
@@ -1622,14 +1633,16 @@ DeviceInit create_device(const DeviceDesc& desc) noexcept
 
     RequiredFeatures enabled = selected_features;
     enable_required_features(enabled);
-    enabled.chain(device->caps.mesh_shaders);
+    enabled.chain(device->caps.mesh_shaders, device->caps.unified_image_layouts);
 
-    const char* enabled_device_extensions[3]{};
+    const char* enabled_device_extensions[4]{};
     uint32 enabled_device_extension_count = 0;
     enabled_device_extensions[enabled_device_extension_count++] = VK_EXT_MUTABLE_DESCRIPTOR_TYPE_EXTENSION_NAME;
     if (windowed) enabled_device_extensions[enabled_device_extension_count++] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
     if (device->caps.mesh_shaders)
         enabled_device_extensions[enabled_device_extension_count++] = VK_EXT_MESH_SHADER_EXTENSION_NAME;
+    if (device->caps.unified_image_layouts)
+        enabled_device_extensions[enabled_device_extension_count++] = VK_KHR_UNIFIED_IMAGE_LAYOUTS_EXTENSION_NAME;
 
     constexpr float queue_priority = 1.0f;
     const VkDeviceQueueCreateInfo queue_info{
@@ -2166,6 +2179,7 @@ void drop_pending_texture(Device* device, Texture* texture) noexcept
 
 } // namespace
 
+// TODO: update create_texture comments
 Texture* create_texture(Device* device, const TextureDesc& desc) noexcept
 {
     if (!alive(device)) return nullptr;

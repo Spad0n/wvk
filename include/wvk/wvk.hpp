@@ -802,6 +802,10 @@ struct DeviceCaps
     // format. Build colour targets from this value, never from the requested one, or the PSO will
     // not match the render pass. Format::undefined on a headless device.
     Format swapchain_format = Format::undefined;
+
+    // VK_KHR_unified_image_layouts: the driver guarantees that GENERAL, the only layout wvk uses,
+    // is as efficient as the dedicated layouts, so keeping textures in GENERAL costs nothing.
+    bool unified_image_layouts = false;
 };
 
 // Which windowing protocol to build a surface for. Consulted on Linux only; Win32 ignores it.
