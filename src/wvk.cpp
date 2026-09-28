@@ -1408,37 +1408,6 @@ DeviceInit create_device(const DeviceDesc& desc) noexcept
         }
     }
 
-    //if (debug_utils)
-    //{
-    //    std::cout << "WVK Debug enabled" << std::endl;
-    //    if (auto create_messenger = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
-    //            vkGetInstanceProcAddr(device->instance, "vkCreateDebugUtilsMessengerEXT")))
-    //    {
-    //        VkValidationFeatureEnableEXT validation_feature_storage[] = {
-    //            VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT,
-    //            VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT,
-    //        };
-
-    //        VkValidationFeaturesEXT validation_features {
-    //            .sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT,
-    //            .enabledValidationFeatureCount = 2,
-    //            .pEnabledValidationFeatures = validation_feature_storage,
-    //        };
-
-    //        const VkDebugUtilsMessengerCreateInfoEXT messenger_info{
-    //            .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
-    //            .pNext = &validation_features,
-    //            .messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-    //                               VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
-    //                               VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT,
-    //            .messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-    //                           VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
-    //            .pfnUserCallback = debug_callback,
-    //        };
-    //        create_messenger(device->instance, &messenger_info, nullptr, &device->messenger);
-    //    }
-    //}
-
     if (windowed)
     {
 #if defined(_WIN32)
